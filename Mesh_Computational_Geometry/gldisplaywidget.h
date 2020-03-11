@@ -10,7 +10,8 @@ enum DisplayMode
 {
     PLAIN_FACE_MODE = 0,
     WIREFRAME_MODE = 1,
-    CURVATURE_MODE = 2
+    POINT_MODE = 2,
+    CURVATURE_MODE = 3
 };
 
 class GLDisplayWidget : public QGLWidget
@@ -24,7 +25,10 @@ public:
 
     void changeMode(int i);
     inline void loadFile(const char file_name[]) {_mesh.loadMesh(file_name);};
+    inline void completeMesh(void) {_mesh.completeMesh();};
+    inline void computeDelaunay(void) {_mesh.computeDelaunay();};
 
+    void switchShowPoints();
     void switchShowVertexConnexions();
     void switchShowTriangleConnexions();
     void switchShowLaplacian();
@@ -38,6 +42,7 @@ protected:
 
     // Mode d'affichage
     DisplayMode _mode;
+    bool _b_show_points;
     bool _b_show_vertex_connexions;
     bool _b_show_triangle_connexions;
     bool _b_show_laplacian;

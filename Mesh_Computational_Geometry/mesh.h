@@ -22,9 +22,14 @@ struct Vertex
 {
     Point point;
     int i_triangle = -1;
-    Point vetor_value = Point(0,0,0);
+    Point vector_value = Point(0,0,0);
 };
 
+struct Edge
+{
+    int i_triangle;     // indice du triangle
+    int k_edge;         // 0 1 2
+};
 
 
 // Iterators
@@ -46,12 +51,15 @@ public:
 
     void drawMesh() const;
     void drawMeshWireFrame() const;
+    void drawMeshPoints() const;
     void drawMeshCurvature();
     void drawMeshPointConnexions() const;
     void drawMeshTriangleConnexions() const;
     void drawMeshLaplacian();
     void drawMeshNormal();
     void loadMesh(const char file_name[]);
+    void completeMesh(void);
+    void computeDelaunay(void);
 
     IteratorOnFaces faces_begin();
     IteratorOnFaces faces_end();
@@ -74,10 +82,16 @@ protected:
 
 
     // Méthodes protégées
-    double _computeAeraTriangle(Triangle &T) const;
-    double _computeCotangente(Triangle &T, int k) const;
+    double _computeAeraTriangle(const Triangle &T) const;
+    double _computeCotangente(const Triangle &T, const int& k) const;
     void _computeLaplacian(void);
-    void _test_iterators(void);
+    void _splitTriangle(const int& i_triangle, const int& i_vertex, std::vector<Edge>& edges_to_test);
+    void _edgeFlip(const int& i_triangle, const int& k_edge, std::vector<Edge>& edges_to_test);
+    bool _orientationTest(const Point& A, const Point& B, const Point& C) const;
+    bool _inTriangleTest(const Point& M, const int& i_triangle) const;
+    bool _inCircleTest(Point M, const int& i_triangle) const;
+    bool _toFlipEdgeTest(const Edge& e) const;
+    void _addVertexToMesh(const int& i_vertex);
 
     Gradient _my_gradient;
 };

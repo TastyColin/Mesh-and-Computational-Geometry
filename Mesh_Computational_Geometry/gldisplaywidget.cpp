@@ -11,6 +11,7 @@
 GLDisplayWidget::GLDisplayWidget(QWidget *parent) :
     QGLWidget(parent),
     _mode(PLAIN_FACE_MODE),
+    _b_show_points(false),
     _b_show_vertex_connexions(false),
     _b_show_triangle_connexions(false),
     _b_show_laplacian(false),
@@ -62,10 +63,14 @@ void GLDisplayWidget::paintGL(){
     case WIREFRAME_MODE:
         _mesh.drawMeshWireFrame();
         break;
+    case POINT_MODE:
+        _mesh.drawMeshPoints();
+        break;
     case CURVATURE_MODE:
         _mesh.drawMeshCurvature();
         break;
     }
+    if (_b_show_points) {_mesh.drawMeshPoints();}
     if (_b_show_vertex_connexions) { _mesh.drawMeshPointConnexions(); }
     if (_b_show_triangle_connexions) { _mesh.drawMeshTriangleConnexions(); }
     if (_b_show_laplacian) { _mesh.drawMeshLaplacian(); }
@@ -122,6 +127,11 @@ void GLDisplayWidget::wheelEvent(QWheelEvent *event) {
 void GLDisplayWidget::changeMode(int i)
 {
     _mode = (DisplayMode) i;
+}
+
+void GLDisplayWidget::switchShowPoints()
+{
+    _b_show_points = !_b_show_points;
 }
 
 void GLDisplayWidget::switchShowVertexConnexions()

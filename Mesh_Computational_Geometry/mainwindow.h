@@ -19,6 +19,7 @@ public slots:
     void plainModeSelected();
     void wireModeSelected();
     void curvatureModeSelected();
+    void switchShowPoints();
     void switchShowVertexConnexions();
     void switchShowTriangleConnexions();
     void switchShowLaplacian();
@@ -26,6 +27,8 @@ public slots:
 
 private slots:
     void on_load_button_clicked();
+    void on_complete_button_clicked();
+    void on_delaunay_button_clicked();
 
 private:
     Ui::MainWindow *ui;

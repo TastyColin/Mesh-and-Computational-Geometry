@@ -60,6 +60,13 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
+         <widget class="QCheckBox" name="show_points">
+          <property name="text">
+           <string>Show Points</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="show_triangle_connexions">
           <property name="text">
            <string>Show triangle connexions</string>
@@ -113,12 +120,31 @@
             <string>Queen</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>Slick</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="load_button">
           <property name="text">
            <string>Load File</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="complete_button">
+          <property name="text">
+           <string>Complete File</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="delaunay_button">
+          <property name="text">
+           <string>Delaunay Transformation</string>
           </property>
          </widget>
         </item>

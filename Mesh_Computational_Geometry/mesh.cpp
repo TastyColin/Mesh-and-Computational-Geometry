@@ -28,7 +28,6 @@ void Mesh::loadMesh(const char file_name[])
         printf("Error opening file\n");
         exit(1);
     }
-    printf("Testing fscanf() function: \n\n");
     fscanf(fp, "%d %d %d\n", &_nb_vertex, &_nb_triangle, &nb_edge);
     printf("Fichier chargé\nNb de sommets : %d\nNb de triangles : %d\n", _nb_vertex, _nb_triangle);
 
@@ -93,8 +92,31 @@ void Mesh::loadMesh(const char file_name[])
             }
         }
     }
-    //_test_iterators();
+}
 
+
+void Mesh::completeMesh()
+{
+    for (int i_vertex = 0; i_vertex < _nb_vertex; ++i_vertex)
+    {
+        if (vertexTab[i_vertex].i_triangle == -1)
+        {
+            _addVertexToMesh(i_vertex);
+        }
+    }
+}
+
+template<typename T>
+void pop_front(std::vector<T>& vec)
+{
+    assert(!vec.empty());
+    vec.front() = std::move(vec.back());
+    vec.pop_back();
+}
+
+void Mesh::computeDelaunay()
+{
+    return;
 }
 
 
@@ -141,6 +163,20 @@ void Mesh::drawMeshWireFrame() const
     }
 }
 
+
+void Mesh::drawMeshPoints() const
+{
+    glColor3d(0,1,0.5);
+    glPointSize(5.);
+    glBegin(GL_POINTS);
+    for (int i_point = 0; i_point < _nb_vertex; ++i_point)
+    {
+        glVertex3f(vertexTab[i_point].point[0], vertexTab[i_point].point[1], vertexTab[i_point].point[2]);
+    }
+    glEnd();
+}
+
+
 void Mesh::drawMeshCurvature()
 {
     if (!_b_value_computed)
@@ -150,7 +186,7 @@ void Mesh::drawMeshCurvature()
     }
     double seuil = 0;
     for(int i_vertex = 0; i_vertex < _nb_vertex; i_vertex++) {
-        double value = abs(1./vertexTab[i_vertex].vetor_value.computeNorm());
+        double value = abs(1./vertexTab[i_vertex].vector_value.computeNorm());
         if (value > seuil) {seuil = value;}
     }
     seuil = 0.1;
@@ -164,13 +200,13 @@ void Mesh::drawMeshCurvature()
         for (int k = 0; k < 3; k++)
         {
             int i_vertex = triangleTab[i_triangle].i_vertices[k];
-            if (dot(normal_dir, vertexTab[i_vertex].vetor_value) > 0)
+            if (dot(normal_dir, vertexTab[i_vertex].vector_value) > 0)
             {
-                value = 1/vertexTab[i_vertex].vetor_value.computeNorm()/seuil;
+                value = 1/vertexTab[i_vertex].vector_value.computeNorm()/seuil;
             }
             else
             {
-                value = -1/vertexTab[i_vertex].vetor_value.computeNorm()/seuil;
+                value = -1/vertexTab[i_vertex].vector_value.computeNorm()/seuil;
             }
             value = max(min(1.,value),-1.);
             value = value/2+0.5;
@@ -244,7 +280,7 @@ void Mesh::drawMeshLaplacian()
     for(int i_vertex = 0; i_vertex < _nb_vertex; i_vertex++) {
         glBegin(GL_LINE_STRIP);
         glVertexDraw(vertexTab[i_vertex].point);
-        glVertexDraw(vertexTab[i_vertex].point + vertexTab[i_vertex].vetor_value);
+        glVertexDraw(vertexTab[i_vertex].point + vertexTab[i_vertex].vector_value);
         glEnd();
     }
 }
@@ -259,7 +295,7 @@ void Mesh::drawMeshNormal()
 
     glColor3d(1,1,1);
     for(int i_vertex = 0; i_vertex < _nb_vertex; ++i_vertex) {
-        Point normal = vertexTab[i_vertex].vetor_value/vertexTab[i_vertex].vetor_value.computeNorm();
+        Point normal = vertexTab[i_vertex].vector_value/vertexTab[i_vertex].vector_value.computeNorm();
         Point U = vertexTab[triangleTab[vertexTab[i_vertex].i_triangle].i_vertices[1]].point - vertexTab[triangleTab[vertexTab[i_vertex].i_triangle].i_vertices[0]].point;
         Point V = vertexTab[triangleTab[vertexTab[i_vertex].i_triangle].i_vertices[2]].point - vertexTab[triangleTab[vertexTab[i_vertex].i_triangle].i_vertices[0]].point;
         if ( dot(normal, prod(U,V)) < 0) {
@@ -267,35 +303,8 @@ void Mesh::drawMeshNormal()
         }
         glBegin(GL_LINE_STRIP);
         glVertexDraw(vertexTab[i_vertex].point);
-        glVertexDraw(vertexTab[i_vertex].point + normal);
+        glVertexDraw(vertexTab[i_vertex].point + normal );
         glEnd();
-    }
-}
-
-
-void Mesh::_test_iterators(void)
-{
-    int c =0;
-    for (IteratorOnVertices it = vertices_begin(); it != vertices_end(); ++it)
-    {
-        printf("Sommets: %d\n",c);
-        for(CirculatorOnFaces cf = faces_begin_circle(*it); cf != faces_end_circle(*it); ++cf)
-        {
-            printf("Face: %d %d %d\n",(*cf).i_vertices[0], (*cf).i_vertices[1], (*cf).i_vertices[2]);
-        }
-        printf("\n");
-        ++c;
-    }
-    c=0;
-    for (IteratorOnVertices it = vertices_begin(); it != vertices_end(); ++it)
-    {
-        printf("Sommets: %d\n",c);
-        for(CirculatorOnVertices cv = vertices_begin_circle(*it); cv != vertices_end_circle(*it); ++cv)
-        {
-            printf("Voisin: (%lf, %lf, %lf)\n",(*cv).point.x(), (*cv).point.y(), (*cv).point.z());
-        }
-        printf("\n");
-        ++c;
     }
 }
 
@@ -305,14 +314,15 @@ void Mesh::_test_iterators(void)
 // Calculs
 // ========================================================================= //
 
-double Mesh::_computeAeraTriangle(Triangle &T) const
+// Normales et laplacien
+double Mesh::_computeAeraTriangle(const Triangle &T) const
 {
     Point U(vertexTab[T.i_vertices[1]].point - vertexTab[T.i_vertices[0]].point);
     Point V(vertexTab[T.i_vertices[2]].point - vertexTab[T.i_vertices[0]].point);
     return prod(U,V).computeNorm()/2;
 }
 
-double Mesh::_computeCotangente(Triangle &T, int k) const
+double Mesh::_computeCotangente(const Triangle &T, const int& k) const
 {
     Point U(vertexTab[T.i_vertices[(k+1)%3]].point - vertexTab[T.i_vertices[k]].point);
     Point V(vertexTab[T.i_vertices[(k+2)%3]].point - vertexTab[T.i_vertices[k]].point);
@@ -341,10 +351,162 @@ void Mesh::_computeLaplacian(void)
             Point U_j2 = vertexTab[cir_face->i_vertices[(k_vertex+2)%3]].point;
             double cot_1 = _computeCotangente(*cir_face, (k_vertex+2)%3);
             double cot_2 = _computeCotangente(*cir_face, (k_vertex+1)%3);
-            it_vertex->vetor_value += cot_1* (U_j1-U_i) + cot_2* (U_j2-U_i);
+            it_vertex->vector_value += cot_1* (U_j1-U_i) + cot_2* (U_j2-U_i);
             A_i += _computeAeraTriangle(*cir_face)/3.;
         }
-        it_vertex->vetor_value /= (2*A_i);
+        it_vertex->vector_value /= (2*A_i);
+    }
+}
+
+// Split triangle
+void Mesh::_splitTriangle(const int &i_triangle, const int &i_vertex, std::vector<Edge>& edges_to_test)
+{
+    // Nouveaux triangles ajoutés et leur indice
+    int i_new_triangle1 = _nb_triangle;
+    int i_new_triangle2 = _nb_triangle + 1;
+    // Ajout des deux triangles
+    triangleTab.push_back(triangleTab[i_triangle]);
+    triangleTab.push_back(triangleTab[i_triangle]);
+    _nb_triangle += 2;
+
+    // Changement de l'association sommet triangle
+    vertexTab[triangleTab[i_triangle].i_vertices[0]].i_triangle = i_new_triangle1;
+    vertexTab[i_vertex].i_triangle = i_triangle;
+
+    // Les triangles adjacents au triangle (leur indice)
+    int i_adjacent_triangle1, i_adjacent_triangle2;
+    i_adjacent_triangle1 = triangleTab[i_triangle].i_triangles[1];
+    i_adjacent_triangle2 = triangleTab[i_triangle].i_triangles[2];
+
+    // Changement des sommets
+    triangleTab[i_triangle].i_vertices[0] = i_vertex;
+    triangleTab[i_new_triangle1].i_vertices[1] = i_vertex;
+    triangleTab[i_new_triangle2].i_vertices[2] = i_vertex;
+
+    // Changement des triangles adjacents aux trois triangles
+    triangleTab[i_triangle].i_triangles[1] = i_new_triangle1;
+    triangleTab[i_triangle].i_triangles[2] = i_new_triangle2;
+    triangleTab[i_new_triangle1].i_triangles[0] = i_triangle;
+    triangleTab[i_new_triangle1].i_triangles[2] = i_new_triangle2;
+    triangleTab[i_new_triangle2].i_triangles[0] = i_triangle;
+    triangleTab[i_new_triangle2].i_triangles[1] = i_new_triangle1;
+
+    // Changement des triangles adjacents aux triangles adjacents
+    for (int k = 0; k <3; ++k)
+    {
+        if (triangleTab[i_adjacent_triangle1].i_triangles[k] == i_triangle) triangleTab[i_adjacent_triangle1].i_triangles[k] = i_new_triangle1;
+        if (triangleTab[i_adjacent_triangle2].i_triangles[k] == i_triangle) triangleTab[i_adjacent_triangle2].i_triangles[k] = i_new_triangle2;
+    }
+
+    // Ajout des arêtes à tester
+    edges_to_test.push_back(Edge {i_triangle, 0});
+    edges_to_test.push_back(Edge {i_new_triangle1, 1});
+    edges_to_test.push_back(Edge {i_new_triangle2, 2});
+
+
+}
+
+
+void Mesh::_edgeFlip(const int &i_triangle, const int &k_edge, std::vector<Edge>& edges_to_test)
+{
+    // Triangle de l'autre côté de l'arrête
+    int i_other_triangle = triangleTab[i_triangle].i_triangles[k_edge];
+    int k_edge_other;
+    for (int k = 0; k <3; ++k)
+    {
+        if (triangleTab[i_other_triangle].i_triangles[k] == i_triangle) k_edge_other = k;
+    }
+
+    // Récupération des variables
+    int i_vertex_triangle = triangleTab[i_triangle].i_vertices[k_edge];
+    int i_vertex_other_triangle = triangleTab[i_other_triangle].i_vertices[k_edge_other];
+    int i_adjacent_triangle = triangleTab[i_triangle].i_triangles[(k_edge+1)%3];
+    int i_adjacent_triangle_other = triangleTab[i_other_triangle].i_triangles[(k_edge_other+1)%3];
+
+    // Modification des triangles
+    triangleTab[i_triangle].i_vertices[(k_edge+2)%3] = i_vertex_other_triangle;
+    triangleTab[i_other_triangle].i_vertices[(k_edge_other+2)%3] = i_vertex_triangle;
+    triangleTab[i_triangle].i_triangles[k_edge] = i_adjacent_triangle_other;
+    triangleTab[i_triangle].i_triangles[(k_edge+1)%3] = i_other_triangle;
+    triangleTab[i_other_triangle].i_triangles[k_edge_other] = i_adjacent_triangle;
+    triangleTab[i_other_triangle].i_triangles[(k_edge_other+1)%3] = i_triangle;
+
+    // Coutures des triangles adjacents
+    for (int k = 0; k <3; ++k)
+    {
+        if (triangleTab[i_adjacent_triangle].i_triangles[k] == i_triangle) triangleTab[i_adjacent_triangle].i_triangles[k] = i_other_triangle;
+        if (triangleTab[i_adjacent_triangle_other].i_triangles[k] == i_other_triangle) triangleTab[i_adjacent_triangle_other].i_triangles[k] = i_triangle;
+    }
+
+    // Changement de l'association sommet triangle
+    vertexTab[triangleTab[i_triangle].i_vertices[(k_edge+1)%3]].i_triangle = i_triangle;
+    vertexTab[triangleTab[i_other_triangle].i_vertices[(k_edge_other+1)%3]].i_triangle = i_other_triangle;
+
+    // Ajout des arêtes à tester
+    edges_to_test.push_back(Edge{i_triangle, k_edge});
+    edges_to_test.push_back(Edge{i_other_triangle, (k_edge_other + 2)%3});
+}
+
+
+bool Mesh::_orientationTest(const Point &A, const Point &B, const Point &C) const
+{
+    return (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]) > 0;
+}
+
+
+bool Mesh::_inTriangleTest(const Point &M, const int &i_triangle) const
+{
+    bool res = true;
+    for (int k = 0; k < 3; ++k)
+        res = res && _orientationTest(vertexTab[triangleTab[i_triangle].i_vertices[k]].point, vertexTab[triangleTab[i_triangle].i_vertices[(k+1)%3]].point, M);
+    return res;
+}
+
+
+bool Mesh::_inCircleTest(Point M, const int &i_triangle) const
+{
+    if (M[2] != 0)
+        return false;
+    Point A = vertexTab[triangleTab[i_triangle].i_vertices[0]].point;
+    Point B = vertexTab[triangleTab[i_triangle].i_vertices[1]].point;
+    Point C = vertexTab[triangleTab[i_triangle].i_vertices[2]].point;
+    B[2] = dot(B-A,B-A);
+    C[2] = dot(C-A,C-A);
+    M[2] = dot(M-A,M-A);
+    return dot(prod(B-A,C-A),M-A) < 0.;
+}
+
+
+bool Mesh::_toFlipEdgeTest(const Edge &e) const
+{
+    int i_other_triangle = triangleTab[e.i_triangle].i_triangles[e.k_edge];
+    int k_other = 0;
+    for (int k = 1; k < 3; ++k)
+    {
+        if (triangleTab[i_other_triangle].i_triangles[k] == e.i_triangle)
+            k_other = k;
+    }
+    int i_vertex = triangleTab[i_other_triangle].i_vertices[k_other];
+    return _inCircleTest(vertexTab[i_vertex].point, e.i_triangle);
+}
+
+void Mesh::_addVertexToMesh(const int &i_vertex)
+{
+    std::vector<Edge> edges_to_test;
+    for (int i_triangle = 0; i_triangle < _nb_triangle; ++i_triangle)
+    {
+        if (_inTriangleTest(vertexTab[i_vertex].point, i_triangle))
+        {
+            _splitTriangle(i_triangle, i_vertex, edges_to_test);
+            while (!edges_to_test.empty())
+            {
+                Edge e = edges_to_test.back();
+                if (_toFlipEdgeTest(e))
+                    _edgeFlip(e.i_triangle, e.k_edge, edges_to_test);
+                edges_to_test.pop_back();
+            }
+            return;
+        }
     }
 }
 
