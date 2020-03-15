@@ -25,7 +25,7 @@ GLDisplayWidget::GLDisplayWidget(QWidget *parent) :
 void GLDisplayWidget::initializeGL()
 {
     // background color
-    glClearColor(0.2, 0.2, 0.2, 1);
+    glClearColor(1., 1., 0.8, 1.);
 
     // Shader
     glEnable(GL_DEPTH_TEST);
@@ -68,6 +68,9 @@ void GLDisplayWidget::paintGL(){
         break;
     case CURVATURE_MODE:
         _mesh.drawMeshCurvature();
+        break;
+    case VORONOI_MODE:
+        _mesh.drawMeshVoronoi();
         break;
     }
     if (_b_show_points) {_mesh.drawMeshPoints();}

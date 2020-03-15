@@ -12,8 +12,7 @@ public:
 
     int i_vertices[3];
 	int i_triangles[3];
-
-    
+    int i_center;  
 };
 
 #endif // TRIANGLE_H

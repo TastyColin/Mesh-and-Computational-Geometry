@@ -2,6 +2,9 @@
 #define MESH_H
 
 #include <QGLWidget>
+#include <QTime>
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <string>
 #include<stdio.h>
 #include<stdlib.h>
@@ -11,6 +14,7 @@
 #include "point.h"
 #include "triangle.h"
 #include "gradient.h"
+
 
 using namespace std;
 
@@ -53,13 +57,13 @@ public:
     void drawMeshWireFrame() const;
     void drawMeshPoints() const;
     void drawMeshCurvature();
+    void drawMeshVoronoi();
     void drawMeshPointConnexions() const;
     void drawMeshTriangleConnexions() const;
     void drawMeshLaplacian();
     void drawMeshNormal();
     void loadMesh(const char file_name[]);
-    void completeMesh(void);
-    void computeDelaunay(void);
+    void addVertex(int nb_vertices);
 
     IteratorOnFaces faces_begin();
     IteratorOnFaces faces_end();
@@ -76,9 +80,16 @@ protected:
     // Attributs protégés
     int _nb_vertex;
     int _nb_triangle;
-    QVector<Vertex> vertexTab;
-    QVector<Triangle> triangleTab;
+    QVector<Vertex> _vertex_tab;
+    QVector<Triangle> _triangle_tab;
+    QVector<Point> _triange_center_tab;
     bool _b_value_computed;
+    bool _b_triangle_centers_computed;
+
+        // Visualisation pas à pas de l'ajout
+    bool _b_step_by_step = false;
+    QVector<int> _i_path_tab;
+    int i_target = -1;
 
 
     // Méthodes protégées
@@ -92,6 +103,8 @@ protected:
     bool _inCircleTest(Point M, const int& i_triangle) const;
     bool _toFlipEdgeTest(const Edge& e) const;
     void _addVertexToMesh(const int& i_vertex);
+    void _computeTriangleCenters(void);
+    int _findTriangle(const int& i_vertex);
 
     Gradient _my_gradient;
 };

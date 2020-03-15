@@ -19,6 +19,7 @@ public slots:
     void plainModeSelected();
     void wireModeSelected();
     void curvatureModeSelected();
+    void voronoiModeSelected();
     void switchShowPoints();
     void switchShowVertexConnexions();
     void switchShowTriangleConnexions();
@@ -27,8 +28,9 @@ public slots:
 
 private slots:
     void on_load_button_clicked();
-    void on_complete_button_clicked();
-    void on_delaunay_button_clicked();
+    void on_add_one_vertex_clicked();
+    void on_add_ten_vertices_clicked();
+    void on_add_all_vertices_clicked();
 
 private:
     Ui::MainWindow *ui;

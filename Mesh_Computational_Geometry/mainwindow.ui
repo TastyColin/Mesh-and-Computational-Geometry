@@ -55,6 +55,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QRadioButton" name="voronoi_mode">
+          <property name="text">
+           <string>Voronoï</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -135,16 +142,29 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="complete_button">
+         <widget class="QPushButton" name="add_one_vertex">
           <property name="text">
-           <string>Complete File</string>
+           <string>Add 1 vertex (Step by step)</string>
+          </property>
+          <property name="default">
+           <bool>false</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="delaunay_button">
+         <widget class="QPushButton" name="add_ten_vertices">
           <property name="text">
-           <string>Delaunay Transformation</string>
+           <string>Add 10 vertices</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="add_all_vertices">
+          <property name="text">
+           <string>Add all vertices</string>
           </property>
          </widget>
         </item>
